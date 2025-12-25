@@ -1,0 +1,19 @@
+# Facebook Marketing API
+facebook-business==19.0.0
+
+# PostgreSQL
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
+
+# Excel export
+pandas==2.1.4
+openpyxl==3.1.2
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Scheduling (optional - for automated daily runs)
+schedule==1.2.1
+
+# Data validation
+pydantic==2.5.2
