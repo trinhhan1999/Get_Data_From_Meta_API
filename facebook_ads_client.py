@@ -3,7 +3,7 @@
 Facebook Ads API Client - Multi Account Support
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Dict, Any
 from facebook_business.api import FacebookAdsApi
 from facebook_business.adobjects.adaccount import AdAccount
@@ -30,9 +30,58 @@ class FacebookAdsClient:
         logger.info(f"Facebook Ads API initialized for account: {self.ad_account_id}")
     
     def get_ads_data(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
-        """Fetch ads insights data"""
+        """Fetch ads insights data with automatic chunking for large date ranges"""
         logger.info(f"Fetching ads data from {start_date} to {end_date}")
         
+        # Convert to datetime objects
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+        end = datetime.strptime(end_date, '%Y-%m-%d')
+        
+        # Calculate date range in days
+        date_range_days = (end - start).days
+        
+        # If date range > 30 days, split into chunks
+        if date_range_days > 30:
+            logger.info(f"Large date range detected ({date_range_days} days). Splitting into 30-day chunks...")
+            return self._fetch_data_in_chunks(start_date, end_date)
+        else:
+            return self._fetch_single_range(start_date, end_date)
+    
+    def _fetch_data_in_chunks(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
+        """Fetch data in 30-day chunks to avoid API limits"""
+        start = datetime.strptime(start_date, '%Y-%m-%d')
+        end = datetime.strptime(end_date, '%Y-%m-%d')
+        
+        all_results = []
+        current_start = start
+        chunk_num = 0
+        
+        while current_start <= end:
+            chunk_num += 1
+            # Calculate chunk end (30 days from start or final end date)
+            current_end = min(current_start + timedelta(days=29), end)
+            
+            chunk_start_str = current_start.strftime('%Y-%m-%d')
+            chunk_end_str = current_end.strftime('%Y-%m-%d')
+            
+            logger.info(f"  Chunk {chunk_num}: Fetching {chunk_start_str} to {chunk_end_str}")
+            
+            try:
+                chunk_results = self._fetch_single_range(chunk_start_str, chunk_end_str)
+                all_results.extend(chunk_results)
+                logger.info(f"  Chunk {chunk_num}: Got {len(chunk_results)} records")
+            except Exception as e:
+                logger.error(f"  Chunk {chunk_num}: Error - {e}")
+                # Continue with next chunk even if one fails
+            
+            # Move to next chunk
+            current_start = current_end + timedelta(days=1)
+        
+        logger.info(f"Total fetched: {len(all_results)} records from {chunk_num} chunks")
+        return all_results
+    
+    def _fetch_single_range(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
+        """Fetch data for a single date range"""
         params = {
             'level': 'ad',
             'time_range': {
@@ -51,7 +100,6 @@ class FacebookAdsClient:
                 parsed = self._parse_insight(insight)
                 results.append(parsed)
             
-            logger.info(f"Fetched {len(results)} records")
             return results
             
         except Exception as e:
@@ -98,6 +146,7 @@ class FacebookAdsClient:
             'impressions': int(data.get('impressions', 0)),
             'reach': int(data.get('reach', 0)),
             'frequency': float(data.get('frequency', 0)),
+            'clicks': int(data.get('clicks', 0)),
             'cpc_all': float(data.get('cpc', 0)),
             'cpc_link_click': float(data.get('cost_per_inline_link_click', 0)),
             'ctr_all': float(data.get('ctr', 0)),

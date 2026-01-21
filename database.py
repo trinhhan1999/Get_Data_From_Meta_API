@@ -33,6 +33,7 @@ def create_ads_table(table_name: str):
         Column('impressions', BigInteger, default=0),
         Column('reach', BigInteger, default=0),
         Column('frequency', Float, default=0),
+        Column('clicks', BigInteger, default=0),
         Column('cpc_all', Float, default=0),
         Column('cpc_link_click', Float, default=0),
         Column('ctr_all', Float, default=0),
@@ -100,6 +101,7 @@ class DatabaseManager:
                     impressions=data.get('impressions', 0),
                     reach=data.get('reach', 0),
                     frequency=data.get('frequency', 0),
+                    clicks=data.get('clicks', 0),
                     cpc_all=data.get('cpc_all', 0),
                     cpc_link_click=data.get('cpc_link_click', 0),
                     ctr_all=data.get('ctr_all', 0),
@@ -147,6 +149,15 @@ class DatabaseManager:
         self.session.execute(self.table.delete())
         self.session.commit()
         logger.info(f"Cleared all data from {self.table_name}")
+    
+    def clear_date_range(self, start_date, end_date):
+        """Clear data for a specific date range"""
+        delete_stmt = self.table.delete().where(
+            (self.table.c.day >= start_date) & (self.table.c.day <= end_date)
+        )
+        result = self.session.execute(delete_stmt)
+        self.session.commit()
+        logger.info(f"Cleared {result.rowcount} records from {start_date} to {end_date} in {self.table_name}")
 
 
 def setup_all_tables():

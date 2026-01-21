@@ -1,6 +1,11 @@
 # Environment files
 .env
 
+# Google Credentials
+credentials.json
+*.json
+!requirements.json
+
 # Python
 __pycache__/
 *.py[cod]

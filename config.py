@@ -26,7 +26,8 @@ class Config:
             'id': os.getenv('AD_ACCOUNT_ID_1'),
             'name': os.getenv('AD_ACCOUNT_NAME_1', 'Account1'),
             'table_name': 'facebook_ads_cpas_shopee',
-            'excel_filename': 'CPAS_Shopee_Shondo.xlsx'
+            'excel_filename': 'CPAS_Shopee_Shondo.xlsx',
+            'sheet_name': os.getenv('AD_ACCOUNT_SHEET_1', 'CPAS_Shopee_Shondo')
         })
     
     # Load Ad Account 2
@@ -35,7 +36,8 @@ class Config:
             'id': os.getenv('AD_ACCOUNT_ID_2'),
             'name': os.getenv('AD_ACCOUNT_NAME_2', 'Account2'),
             'table_name': 'facebook_ads_onlinestore',
-            'excel_filename': 'OnlineStore_Shondo.xlsx'
+            'excel_filename': 'OnlineStore_Shondo.xlsx',
+            'sheet_name': os.getenv('AD_ACCOUNT_SHEET_2', 'OnlineStore_Shondo')
         })
     
     # Backward compatibility
@@ -54,6 +56,11 @@ class Config:
     # Export Configuration
     EXPORT_FOLDER = Path(os.getenv('EXPORT_FOLDER', 'D:/Get_Data_From_Meta/exports'))
     EXCEL_FILENAME = os.getenv('EXCEL_FILENAME', 'facebook_ads_data.xlsx')
+    
+    # Google Sheets Configuration
+    USE_GOOGLE_SHEETS = os.getenv('USE_GOOGLE_SHEETS', 'false').lower() == 'true'
+    GOOGLE_CREDENTIALS_FILE = os.getenv('GOOGLE_CREDENTIALS_FILE', 'credentials.json')
+    GOOGLE_SPREADSHEET_ID = os.getenv('GOOGLE_SPREADSHEET_ID', '')
     
     # Date Configuration
     DATE_PRESET = os.getenv('DATE_PRESET', 'last_30d')
@@ -85,6 +92,7 @@ class Config:
         'frequency': 'Frequency',
         
         # Click metrics
+        'clicks': 'Clicks (all)',
         'cpc': 'CPC (all)',
         'ctr': 'CTR (all)',
         'cpm': 'CPM (cost per 1,000 impressions)',
@@ -122,7 +130,7 @@ class Config:
         'campaign_name', 'adset_name', 'ad_id', 'ad_name',
         'date_start',
         'spend', 'impressions', 'reach', 'frequency',
-        'cpc', 'ctr', 'cpm',
+        'clicks', 'cpc', 'ctr', 'cpm',
         'inline_link_clicks', 'inline_link_click_ctr', 'cost_per_inline_link_click',
         'actions', 'action_values', 'cost_per_action_type',
     ]

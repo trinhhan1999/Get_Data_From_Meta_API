@@ -8,8 +8,11 @@ from datetime import datetime, timedelta
 import schedule
 from facebook_ads_client import FacebookAdsClient
 from database import DatabaseManager, setup_all_tables
-from excel_exporter import ExcelExporter
 from config import Config
+
+# Conditional import for Google Sheets
+if Config.USE_GOOGLE_SHEETS:
+    from google_sheets_exporter import GoogleSheetsExporter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,11 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 def run_pipeline_for_account(account: dict, days_back: int = 7):
-    """Run pipeline for a single account"""
+    """Run pipeline for a single account - returns data for combined export"""
     account_id = account['id']
     account_name = account['name']
     table_name = account['table_name']
-    excel_filename = account['excel_filename']
     
     logger.info(f"Processing account: {account_name} ({account_id})")
     
@@ -44,37 +46,36 @@ def run_pipeline_for_account(account: dict, days_back: int = 7):
         
         if not ads_data:
             logger.warning(f"  No data fetched for {account_name}")
-            return
+            return []
         
-        # 2. Save to PostgreSQL (clear old data first)
+        # 2. Save to PostgreSQL (clear date range first)
         logger.info(f"  Step 2: Saving data to PostgreSQL table: {table_name}...")
         db_manager = DatabaseManager(table_name=table_name)
         db_manager.create_table()
         
-        # Clear old data before inserting new
-        logger.info(f"  Clearing old data from {table_name}...")
-        db_manager.clear_all_data()
+        # Clear only the date range we're fetching (not all data)
+        logger.info(f"  Clearing data from {start_date} to {end_date} in {table_name}...")
+        db_manager.clear_date_range(start_date, end_date)
         
         inserted_count = db_manager.insert_data(ads_data)
         logger.info(f"  Inserted {inserted_count} records")
         
-        # 3. Export to Excel (old file auto deleted)
-        logger.info(f"  Step 3: Exporting to Excel: {excel_filename}...")
-        exporter = ExcelExporter(filename=excel_filename)
-        
+        # Get all data from database for combined Google Sheets export
         all_data = db_manager.get_all_data()
-        excel_path = exporter.export_to_excel(all_data)
-        logger.info(f"  Exported {len(all_data)} records to {excel_path}")
+        logger.info(f"  Total {len(all_data)} records in database")
         
         logger.info(f"  Account {account_name} completed successfully!")
         
+        # Return all data for combined Google Sheets export
+        return all_data
+        
     except Exception as e:
         logger.error(f"  Error processing {account_name}: {e}")
-        raise
+        return []
 
 
 def run_pipeline(days_back: int = 7):
-    """Run pipeline for all accounts"""
+    """Run pipeline for all accounts and combine data in Google Sheets"""
     logger.info("=" * 60)
     logger.info("STARTING FACEBOOK ADS DATA PIPELINE (MULTI-ACCOUNT)")
     logger.info("=" * 60)
@@ -85,17 +86,36 @@ def run_pipeline(days_back: int = 7):
     
     logger.info(f"Found {len(Config.AD_ACCOUNTS)} ad accounts to process")
     
+    combined_data = []
+    
     for i, account in enumerate(Config.AD_ACCOUNTS, 1):
         logger.info("-" * 40)
         logger.info(f"Account {i}/{len(Config.AD_ACCOUNTS)}")
         try:
-            run_pipeline_for_account(account, days_back)
+            account_data = run_pipeline_for_account(account, days_back)
+            if account_data:
+                combined_data.extend(account_data)
         except Exception as e:
             logger.error(f"Failed to process account: {e}")
             continue
     
+    # Export combined data to single Google Sheet
+    if Config.USE_GOOGLE_SHEETS and combined_data:
+        logger.info("=" * 60)
+        logger.info("EXPORTING COMBINED DATA TO GOOGLE SHEETS")
+        logger.info("=" * 60)
+        
+        try:
+            gs_exporter = GoogleSheetsExporter(sheet_name="Facebook Ads Data")
+            sheet_url = gs_exporter.export_to_sheet(combined_data, sheet_name="Facebook Ads Data")
+            logger.info(f"Successfully exported {len(combined_data)} total records to Google Sheets")
+            logger.info(f"Sheet URL: {sheet_url}")
+        except Exception as e:
+            logger.error(f"Failed to export to Google Sheets: {e}")
+    
     logger.info("=" * 60)
     logger.info("PIPELINE COMPLETED")
+    logger.info(f"Total records processed: {len(combined_data)}")
     logger.info("=" * 60)
 
 
