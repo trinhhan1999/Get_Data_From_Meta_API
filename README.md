@@ -194,3 +194,6 @@ Logs được lưu trong file `facebook_ads_pipeline.log`
 ## 📞 Support
 
 Nếu có vấn đề, kiểm tra logs trong `facebook_ads_pipeline.log`
+
+## run
+.\venv\Scripts\python.exe main.py --run-now --days 120
