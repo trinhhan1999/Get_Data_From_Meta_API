@@ -96,9 +96,22 @@ class FacebookAdsClient:
             insights = self.ad_account.get_insights(params=params)
             
             results = []
+            ad_ids = set()
             for insight in insights:
                 parsed = self._parse_insight(insight)
                 results.append(parsed)
+                if parsed.get('ad_id'):
+                    ad_ids.add(parsed['ad_id'])
+            
+            # Fetch extra details for the unique ad_ids
+            extra_details = self._fetch_ad_extra_details(list(ad_ids))
+            for res in results:
+                # Add the extra fields into the result
+                ad_id = res.get('ad_id')
+                details = extra_details.get(ad_id, {})
+                res['permalink'] = details.get('permalink', '')
+                res['created_time'] = details.get('created_time', '')
+                res['start_time'] = details.get('start_time', '')
             
             return results
             
@@ -170,3 +183,50 @@ class FacebookAdsClient:
             'website_purchases_conversion_value': action_values.get('purchase', 0),
             'post_comments': int(actions.get('post_comment', actions.get('comment', 0))),
         }
+        
+    def _fetch_ad_extra_details(self, ad_ids: List[str]) -> Dict[str, Dict[str, str]]:
+        """Fetch permalink, created_time, and start_time for a list of Ad IDs"""
+        if not ad_ids:
+            return {}
+            
+        details = {}
+        # Get unique IDs to minimize calls
+        unique_ad_ids = list(set(ad_ids))
+        
+        # API requires explicit fields
+        chunk_size = 50
+        api = FacebookAdsApi.get_default_api()
+        
+        for i in range(0, len(unique_ad_ids), chunk_size):
+            chunk = unique_ad_ids[i:i+chunk_size]
+            try:
+                # Request multiple nodes at once using '?ids='
+                response = api.call(
+                    method='GET',
+                    path=('?', ),
+                    params={
+                        'ids': ','.join(chunk),
+                        'fields': 'preview_shareable_link,created_time,adset{start_time}'
+                    }
+                )
+                if response.json():
+                    for ad_id, ad_data in response.json().items():
+                        adset_data = ad_data.get('adset', {})
+                        
+                        created_time = ad_data.get('created_time', '')
+                        if created_time and 'T' in created_time:
+                            created_time = created_time.split('T')[0]
+                            
+                        start_time = adset_data.get('start_time', '')
+                        if start_time and 'T' in start_time:
+                            start_time = start_time.split('T')[0]
+                            
+                        details[ad_id] = {
+                            'permalink': ad_data.get('preview_shareable_link', ''),
+                            'created_time': created_time,
+                            'start_time': start_time
+                        }
+            except Exception as e:
+                logger.error(f"Error fetching extra details for chunk: {e}")
+                
+        return details

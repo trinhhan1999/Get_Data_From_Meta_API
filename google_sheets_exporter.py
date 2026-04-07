@@ -98,7 +98,7 @@ class GoogleSheetsExporter:
                 logger.info(f"Expanded worksheet to {needed_rows} rows")
             
             # Update header first
-            worksheet.update('D1', [headers], value_input_option='USER_ENTERED')
+            worksheet.update('E1', [headers], value_input_option='USER_ENTERED')
             logger.info(f"Exported header row")
             
             # Update data in batches to avoid API limits (1000 rows per batch)
@@ -108,15 +108,15 @@ class GoogleSheetsExporter:
                 start_row = i + 2  # +2 because row 1 is header and rows are 1-indexed
                 
                 # Calculate end column letter dynamically
-                # Column D is the 4th column (index 3), so end column is D + len(headers) - 1
-                end_col_index = 3 + len(headers)  # 3 for column D (0-indexed: A=0, B=1, C=2, D=3)
+                # Column E is the 5th column (index 4), so end column is E + len(headers) - 1
+                end_col_index = 4 + len(headers)  # 4 for column E (0-indexed: A=0, B=1, C=2, D=3, E=4)
                 end_col_letter = self._column_index_to_letter(end_col_index)
                 
-                range_notation = f'D{start_row}:{end_col_letter}{start_row + len(batch) - 1}'
+                range_notation = f'E{start_row}:{end_col_letter}{start_row + len(batch) - 1}'
                 worksheet.update(range_notation, batch, value_input_option='USER_ENTERED')
                 logger.info(f"Exported rows {start_row} to {start_row + len(batch) - 1} ({len(batch)} rows)")
             
-            logger.info(f"Exported total {len(rows)} data rows to {sheet_name} starting from column D")
+            logger.info(f"Exported total {len(rows)} data rows to {sheet_name} starting from column E")
             
             # Format header row
             self._format_header(worksheet, len(headers))
@@ -157,9 +157,9 @@ class GoogleSheetsExporter:
     def _format_header(self, worksheet, num_cols: int):
         """Format header row (bold, background color)"""
         try:
-            # Start from column D (column index 3)
-            start_col = 'D'
-            end_col = chr(67 + num_cols)  # D is 68 (67+1), so 67+num_cols for end
+            # Start from column E (column index 4)
+            start_col = 'E'
+            end_col = chr(68 + num_cols)  # E is 69 (68+1), so 68+num_cols for end
             worksheet.format('{}1:{}1'.format(start_col, end_col), {
                 'textFormat': {'bold': True},
                 'backgroundColor': {'red': 0.8, 'green': 0.8, 'blue': 0.8}
@@ -174,14 +174,14 @@ class GoogleSheetsExporter:
             # Get spreadsheet
             spreadsheet = worksheet.spreadsheet
             
-            # Auto-resize request starting from column D (index 3)
+            # Auto-resize request starting from column E (index 4)
             requests = [{
                 'autoResizeDimensions': {
                     'dimensions': {
                         'sheetId': worksheet.id,
                         'dimension': 'COLUMNS',
-                        'startIndex': 3,  # Column D is index 3
-                        'endIndex': 3 + num_cols  # End at D + num_cols
+                        'startIndex': 4,  # Column E is index 4
+                        'endIndex': 4 + num_cols  # End at E + num_cols
                     }
                 }
             }]
@@ -210,8 +210,8 @@ class GoogleSheetsExporter:
             for col_name in numeric_columns:
                 if col_name in headers:
                     col_index = headers.index(col_name)
-                    # Add 3 because we start from column D (index 3)
-                    actual_col_index = col_index + 3
+                    # Add 4 because we start from column E (index 4)
+                    actual_col_index = col_index + 4
                     
                     # Format as number with thousand separator and 2 decimal places
                     requests.append({

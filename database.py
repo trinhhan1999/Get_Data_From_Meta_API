@@ -28,6 +28,7 @@ def create_ads_table(table_name: str):
         Column('adset_name', String(500)),
         Column('ad_id', String(50), index=True),
         Column('ad_name', String(500)),
+        Column('permalink', String(2000)),
         Column('day', Date, index=True),
         Column('amount_spent', Float, default=0),
         Column('impressions', BigInteger, default=0),
@@ -57,6 +58,8 @@ def create_ads_table(table_name: str):
         Column('website_purchases_conversion_value', Float, default=0),
         Column('post_comments', BigInteger, default=0),
         Column('fetched_at', DateTime, default=datetime.utcnow),
+        Column('created_time', String(100)),
+        Column('start_time', String(100)),
         extend_existing=True
     )
 
@@ -96,6 +99,9 @@ class DatabaseManager:
                     adset_name=data.get('adset_name'),
                     ad_id=data.get('ad_id'),
                     ad_name=data.get('ad_name'),
+                    permalink=data.get('permalink'),
+                    created_time=data.get('created_time'),
+                    start_time=data.get('start_time'),
                     day=data.get('day'),
                     amount_spent=data.get('amount_spent', 0),
                     impressions=data.get('impressions', 0),

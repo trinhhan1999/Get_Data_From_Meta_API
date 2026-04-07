@@ -51,6 +51,9 @@ class ExcelExporter:
             'adset_name': 'Adset Name',
             'ad_id': 'ADS ID',
             'ad_name': 'Ad Name',
+            'permalink': 'Permalink',
+            'created_time': 'Created Time',
+            'start_time': 'Start Time',
             'day': 'Day',
             'amount_spent': 'Amount spent',
             'impressions': 'Impressions',
@@ -92,7 +95,8 @@ class ExcelExporter:
             'Purchases conversion value', 'Cost Per Result', 'Purchases',
             'Adds to cart conversion value', 'Checkouts initiated conversion value',
             'Adds to cart', 'Frequency', 'CTR (link click-through rate)',
-            'Account ID', 'Account name', 'Adset Name', 'Ad Name'
+            'Account ID', 'Account name', 'Adset Name', 'Ad Name', 'Permalink',
+            'Created Time', 'Start Time'
         ]
         
         existing_cols = [col for col in desired_order if col in df.columns]

@@ -81,6 +81,9 @@ class Config:
         'adset_name': 'Adset Name',
         'ad_id': 'ADS ID',
         'ad_name': 'Ad Name',
+        'permalink': 'Permalink',
+        'created_time': 'Created Time',
+        'start_time': 'Start Time',
         
         # Date
         'date_start': 'Day',
